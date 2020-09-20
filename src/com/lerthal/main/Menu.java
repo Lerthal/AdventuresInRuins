@@ -172,6 +172,7 @@ public class Menu {
 	 * 
 	 * }
 	 */
+
 	public void render(Graphics g) {
 
 		if (options[currentOption] == "New Game") {
