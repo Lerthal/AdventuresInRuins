@@ -7,10 +7,7 @@ import java.awt.Font;
 import java.awt.FontFormatException;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import java.awt.event.*;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -32,7 +29,7 @@ import com.lerthal.graficos.Spritesheet;
 import com.lerthal.graficos.UI;
 import com.lerthal.world.World;
 
-public class Game extends Canvas implements Runnable, KeyListener, MouseListener {
+public class Game extends Canvas implements Runnable, KeyListener, MouseListener , MouseMotionListener {
 
 	public static JFrame frame;
 	private Thread thread;
@@ -72,16 +69,16 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	public UI ui;
 	public Sign sign;
 
-	public InputStream stream = Game.class.getResourceAsStream("/VCR_OSD_MONO_1.001.ttf");
-	public static Font newFont;
-
 	public Menu menu;
+	public MenuPause menuPause;
 
 	public Game() {
-		// Sound.musicBackground.loop();
+		Sound.musicBackground.loop();
+		Sound.musicBackground.setVolume(-39);
 		rand = new Random();
 		addKeyListener(this);
 		addMouseListener(this);
+		addMouseMotionListener(this);
 		this.setPreferredSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
 		initFrame();
 		/*
@@ -101,16 +98,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		entities.add(player);
 		world = new World("/lvl1.png");
 		menu = new Menu();
+		menuPause = new MenuPause();
 		// sign = new Sign(120, 470, 16, 16, spritesheet.getSprite(4, 144, 16, 16));
 		// entities.add(sign);
-
-		try {
-			newFont = Font.createFont(Font.TRUETYPE_FONT, stream).deriveFont(40f);
-		} catch (FontFormatException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 
 	}
 
@@ -160,6 +150,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 		} else if (gameState == "Menu") {
 			menu.tick();
+		} else if(gameState == "Pause"){
+			menuPause.tick();
 		}
 
 		if (restartGame) {
@@ -170,7 +162,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			World.restartGame(newWorld);
 		}
 
-		if (gameState == "Menu" || gameState == "Creditos") {
+		if (gameState == "Menu" || gameState == "Guide") {
 			Sound.musicGame.loop();
 			Sound.musicGame.setVolume(-25);
 		}
@@ -189,7 +181,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		g.fillRect(0, 0, WIDTH, HEIGHT);
 		// g.drawImage(player[curAnimation] , 20 , 20 , null);
 
-		/* Renderizaï¿½ï¿½o do jogo */
+		/* Renderização do jogo */
 		world.render(g);
 		Collections.sort(entities, Entity.nodeSorter);
 		for (int i = 0; i < entities.size(); i++) {
@@ -210,14 +202,14 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			Graphics2D g2 = (Graphics2D) g;
 			g2.setColor(new Color(0, 0, 0, 50));
 			g2.fillRect(0, 0, WIDTH * SCALE, HEIGHT * SCALE);
-			g2.setFont(newFont);
+			g2.setFont(new Font("arial", Font.BOLD, 40));
 			g2.setColor(Color.white);
-			g2.drawString("Você morreu,seu idiota!", 250, 300);
-			g2.setFont(newFont);
+			g2.drawString("Você morreu!", 380, 300);
+			g2.setFont(new Font("arial", Font.BOLD, 40));
 			if (showMessageGameOver) {
-				g2.drawString(">Aperte o botão X para reiniciar<", 125, 345);
+				g2.drawString(">Aperte o botão X para reiniciar<", 200, 345);
 			}
-		} else if (gameState == "Menu") {
+		} else if (gameState == "Menu" && gameState == "Pause") {
 			menu.render(g);
 		}
 
@@ -225,41 +217,46 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			Graphics2D g2 = (Graphics2D) g;
 			g2.setColor(new Color(0, 0, 0, 50));
 			g2.fillRect(0, 0, WIDTH * SCALE, HEIGHT * SCALE);
-			g2.setFont(newFont);
+			g2.setFont(new Font("arial", Font.BOLD, 30));
 			g2.setColor(Color.white);
-			g2.drawString("Parabéns, você venceu! :) ", 230, 300);
-			g2.setFont(newFont);
+			g2.drawString("Parabéns, você venceu! :) ", 300, 300);
+			g2.setFont(new Font("arial", Font.BOLD, 25));
 			if (showMessageVictory) {
-				g2.drawString("> Aperte o botão Esc para sair do jogo <", 10, 345);
+				g2.drawString("> Aperte M para sair do jogo! :) <", 240, 345);
 			}
 		} else if (gameState == "Menu") {
 			menu.render(g);
+		}else if(gameState == "Pause"){
+			menuPause.render(g);
 		}
-
-		if (gameState == "Creditos") {
-			g.setColor(new Color(0, 0, 0, 100));
-			g.fillRect(0, 0, WIDTH * SCALE, HEIGHT * SCALE);
+		if (gameState == "Guide") {
+			g.drawImage(Menu.instrucoes , 0 , 0 , WIDTH*SCALE , HEIGHT*SCALE ,null);
 			g.setColor(Color.WHITE);
-			g.setFont(new Font("arial", Font.ITALIC, 40));
-			g.drawString("Créditos:", 430, 50);
-			g.setFont(new Font("arial", Font.ITALIC, 25));
-			g.drawString("Programação: @lerthal_gdev.", 350, 120);
-			g.drawString("Sprites: @snuffles61.", 400, 160);
-			g.drawString("Menu: @_gui.marc.", 400, 200);
-			g.setFont(new Font("arial", Font.ITALIC, 15));
-			g.drawString("Aperte ESC para retornar", 8, 630);
-		}
+			g.setFont(new Font("arial" , Font.BOLD , 13));
+			g.drawString("Movimentação" , 50 , 150);
+			g.drawString("Tiro", 205,151 );
+			g.drawString("W" , 90 , 100);
+			g.drawString("S" , 92 , 120);
+			g.drawString("A" , 70 , 120);
+			g.drawString("D" , 112 , 120);
+			g.setFont(new Font("arial" , Font.ITALIC , 18));
+			g.drawString("Pegue o cajado e derrote todos os inimigos para avançar de nível;" , 38 , 276);
+			g.setFont(new Font("arial" , Font.ITALIC , 16));
+			g.drawString("Cajado lvl1 (arma principal)" , 65 , 440 );
+			g.drawString("Cajado lvl2 (causa mais dano)" , 65 , 520 );
+			g.drawString("Cajado lvl3 (tiro duplo)" , 65 , 600 );
+			g.drawString("Poção de Energia" , 330 , 430);
+			g.drawString("(+Speed)" , 360 , 450);
+			g.drawString("Poção de Vida" , 335 , 585);
+			g.drawString("Icone de Speed" , 565 , 435);
+			g.drawString("Icone de evolução" , 565 , 580);
+			g.drawString("do cajado" , 580 , 600);
+			g.drawString("Essência Azul" , 800 , 425);
+			g.drawString("(Munição)" , 810 , 450);
+			g.drawString("Icone de Essência" , 810 , 590);
+			g.drawString("Aperte I para iniciar" , 800 , 15);
 
-		if (gameState == "Pause") {
-			g.setColor(new Color(0, 0, 0, 100));
-			g.fillRect(0, 0, WIDTH * SCALE, HEIGHT * SCALE);
-			g.setColor(Color.WHITE);
-			g.setFont(new Font("arial", Font.ITALIC, 50));
-			g.drawString(" > Jogo Pausado <", 310, 320);
-			g.setFont(new Font("arial", Font.ITALIC, 25));
-			g.drawString("Aperte ESC para retornar", 375, 390);
 		}
-
 		bs.show();
 
 	}
@@ -321,8 +318,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	public void keyPressed(KeyEvent e) {
 
 		if (e.getKeyCode() == KeyEvent.VK_M && enemies.size() == 0) {
-			restartGame = true;
-			this.gameState = "Menu";
+			System.exit(0);
 		}
 
 		if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
@@ -335,6 +331,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 			if (gameState == "Menu") {
 				menu.up = true;
+			}else if(gameState == "Pause"){
+				menuPause.up = true;
 			}
 
 		} else if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
@@ -342,35 +340,28 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 			if (gameState == "Menu") {
 				menu.down = true;
+			}else if(gameState == "Pause"){
+				menuPause.down = true;
 			}
 		}
 
 		if (e.getKeyCode() == KeyEvent.VK_ENTER) {
 			if (gameState == "Menu") {
 				menu.enter = true;
+			}else if(gameState == "Pause"){
+				menuPause.enter = true;
 			}
 		}
 
 		if (e.getKeyCode() == KeyEvent.VK_X) {
 			restartGame = true;
 		}
+		if(e.getKeyCode() == KeyEvent.VK_ESCAPE){
+			gameState = "Pause";
+		}
 
-		if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-			if (gameState == "Normal") {
-				gameState = "Pause";
-			}
-		
-			
-			if (gameState == "Pause" && e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-				gameState = "Menu";
-			}
-			
-			if (gameState == "Victory")
-				System.exit(1);
-
-			if (gameState == "Creditos" && e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-				gameState = "Menu";
-			}
+		if (gameState == "Guide" && e.getKeyCode() == KeyEvent.VK_I ){
+			gameState = "Normal";
 		}
 
 		// Atirar com teclado
@@ -406,6 +397,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		player.mx = (e.getX() / 4);
 		player.my = (e.getY() / 4);
 
+		Menu.mousePressed = true;
+		MenuPause.mousePressed = true;
+
 	}
 
 	@Override
@@ -426,4 +420,17 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 	}
 
+	@Override
+	public void mouseDragged(MouseEvent e) {
+
+	}
+
+	@Override
+	public void mouseMoved(MouseEvent e) {
+		Menu.mouseX = e.getX();
+		Menu.mouseY = e.getY();
+
+		MenuPause.mouseX = e.getX();
+		MenuPause.mouseY = e.getY();
+	}
 }

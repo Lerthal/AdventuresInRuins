@@ -13,6 +13,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 
@@ -25,30 +27,34 @@ public class Menu {
 	public int maxOption = options.length - 1;
 	public boolean up, down, enter;
 	public static boolean pause = false;
-	public BufferedImage start0, startPlay, startCreditos, startExit;
+	public static BufferedImage startPlay, startGuide, startExit, instrucoes;
 	// public static boolean saveExists = false;
 	// public static boolean saveGame = false;
 
-	public Menu() {
+	public static List<Option> mouseOptions = new ArrayList<>();
+	public static int mouseX;
+	public static int mouseY;
+	public static boolean mousePressed = false;
+
+	public static Option start = new Option(96*4, 100*4, 48*4, 15*4); // poe as coordenas e o tamanho
+	public static Option guide = new Option(88*4, 119*4, 64*4, 15*4); // poe as coordenas e o tamanho
+	public static Option exit = new Option(101*4, 137*4, 38*4, 15*4); // Poe as coordenadas e o tamanho
+
+
+
+	public Menu(){
+		mouseOptions.add(start);
+		mouseOptions.add(guide);
+		mouseOptions.add(exit);
 
 		try {
 			startPlay = ImageIO.read(World.class.getResource("/startPlay.png"));
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-
-		try {
-			startCreditos = ImageIO.read(World.class.getResource("/startCreditos.png"));
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-
-		try {
+			startGuide = ImageIO.read(World.class.getResource("/startCreditos.png"));
 			startExit = ImageIO.read(World.class.getResource("/startExit.png"));
-		} catch (IOException e1) {
-			e1.printStackTrace();
+			instrucoes = ImageIO.read(getClass().getResource("/instrucoes.png"));
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
-
 	}
 
 	public void tick() {
@@ -56,6 +62,29 @@ public class Menu {
 		 * File file = new File("save.txt"); if (file.exists()) { saveExists = true; }
 		 * else { saveExists = false; }
 		 */
+
+		if(mousePressed)
+		{
+			mousePressed = false;
+			Option option;
+
+			for (Option mouseOption : mouseOptions) {
+				option = mouseOption;
+
+				if (mouseX >= option.x && mouseX <= option.x + option.width && mouseY >= option.y && mouseY <= option.y + option.height) {
+					if (option == exit) {
+						System.exit(0);
+					} else if (option == start) {
+						// Lógica do start
+						Game.gameState = "Normal";
+						pause = false;
+					}else if(option == guide){
+						Game.gameState = "Guide";
+					}
+				}
+			}
+		}
+
 
 		if (up) {
 			up = false;
@@ -74,16 +103,15 @@ public class Menu {
 
 		if (enter) {
 			enter = false;
-			if (options[currentOption] == "New Game" || options[currentOption] == "Resume") {
+			if (options[currentOption] == "New Game") {
 				Game.gameState = "Normal";
 				pause = false;
 				// file = new File("save.txt");
 				// file.delete();
-
 			} else if (options[currentOption] == "Exit") {
 				System.exit(1);
 			} else if (options[currentOption] == "Instructions") {
-				Game.gameState = "Creditos";
+				Game.gameState = "Guide";
 				// file = new File("save.txt");
 				/*
 				 * if (file.exists()) { String saver = loadGame(10); applySave(saver); }
@@ -91,7 +119,23 @@ public class Menu {
 			}
 		}
 
+		Option option;
+		for(int i = 0; i < mouseOptions.size(); i++)
+		{
+			option = mouseOptions.get(i);
+			if(mouseX >= option.x && mouseX <= option.x + option.width && mouseY >= option.y && mouseY <= option.y + option.height)
+			{
+				if(option == exit){
+					currentOption = 2;
+				} else if(option == start){
+					currentOption = 0;
+				}else if(option == guide){
+					currentOption = 1;
+
+			}
+		}
 	}
+}
 
 	/*
 	 * public static void applySave(String str) { String[] spl = str.split("/"); for
@@ -133,10 +177,17 @@ public class Menu {
 		if (options[currentOption] == "New Game") {
 			g.drawImage(startPlay, 0, 0, Game.WIDTH * Game.SCALE, Game.HEIGHT * Game.SCALE, null);
 		} else if (options[currentOption] == "Instructions") {
-			g.drawImage(startCreditos, 0, 0, Game.WIDTH * Game.SCALE, Game.HEIGHT * Game.SCALE, null);
+			g.drawImage(startGuide, 0, 0, Game.WIDTH * Game.SCALE, Game.HEIGHT * Game.SCALE, null);
 		} else if (options[currentOption] == "Exit") {
 			g.drawImage(startExit, 0, 0, Game.WIDTH * Game.SCALE, Game.HEIGHT * Game.SCALE, null);
 		}
+
+
+
+
+
+
+
 
 	}
 
